@@ -31,7 +31,7 @@
 <identifier>    ::= <letter> { <letter> | <digit> }
 
 <hexnumber>     ::= [0-9A-F]+
-<decimalnumber> ::= [0-9]+
+<decimalnumber> ::= -?[0-9]+
 
 <comment>       ::= "/" { any-character }
  * 
@@ -279,14 +279,13 @@ class Parser {
     }
 
     // strictly match dec number
-    if (!/^[0-9]+$/.test(firstLook.lexeme)) {
+    if (!/^-?[0-9]+$/.test(firstLook.lexeme)) {
       throw new ParseException(
         `Invalid DEC NUMBER, found ${firstLook.lexeme}`,
         firstLook.line,
         firstLook.column
       );
     }
-
     this.move(); // consume DEC NUMBER
   }
 

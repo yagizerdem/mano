@@ -92,7 +92,7 @@ class Lexer {
         });
       });
 
-      const matches = line?.matchAll(/\w+/g);
+      const matches = line?.matchAll(/-?\w+/g);
       if (!matches) continue;
       for (const match of matches) {
         const newToken = new Token(
@@ -151,7 +151,7 @@ class Lexer {
         prevToken.type === "KEYWORD" &&
         (prevToken.lexeme === "DEC" ||
           MRI_Keywords.includes(prevToken.lexeme)) &&
-        /^\d+$/.test(lexeme)
+        /^-?\d+$/.test(lexeme)
       ) {
         return "NUMBER_DEC";
       }
