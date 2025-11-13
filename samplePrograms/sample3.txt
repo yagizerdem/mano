@@ -1,0 +1,12 @@
+ORG 100
+
+CIF SKI
+        BUN     CIF
+        INP
+        OUT
+        STA     CHR
+        HLT
+
+CHR HEX 120
+
+END

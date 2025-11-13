@@ -94,6 +94,10 @@ class Simulator {
     ) {
       const next = this.inputStream.shift()!;
       this.registers.setInputRegister(next & 0xff);
+      const highByte = this.registers.getAccumulator() & 0xff00;
+      const lowByte = this.registers.getInputRegister() & 0x00ff;
+      this.registers.setAccumulator(highByte | lowByte);
+
       this.flags.FGI = 1; // set FGI back to 1 after input is read
     }
 
