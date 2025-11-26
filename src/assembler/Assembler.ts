@@ -217,7 +217,7 @@ class Assembler {
             rest[0].column
           );
         }
-        // 2’s complement için mask
+        // 2's complement mask
         value = value & 0xffff;
         const data = new Data(lc, value);
         dataBuffer.push(data);
