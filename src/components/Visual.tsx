@@ -103,7 +103,13 @@ function DataPacket({
 }
 
 export function Visual() {
-  const { busTransfers, setBusTransfers } = useAppContext();
+  const { busTransfers, setBusTransfers, animationSpeed } = useAppContext();
+
+  let smallRangeSpeed = 100;
+  let longRangeSpeed = 300;
+
+  smallRangeSpeed = (animationSpeed / 100) * smallRangeSpeed;
+  longRangeSpeed = (animationSpeed / 100) * longRangeSpeed;
 
   return (
     <div className="w-full h-full relative overflow-hidden ">
@@ -120,7 +126,7 @@ export function Visual() {
                 { x: 0, y: 115 }, // AR
                 { x: 220, y: 115 }, // AR
               ]}
-              speed={300}
+              speed={longRangeSpeed}
               onComplete={() => {
                 setBusTransfers((prev) =>
                   prev.filter((x) => x.uuid !== transfer.uuid),
@@ -139,7 +145,7 @@ export function Visual() {
                 { x: 50, y: 370 },
                 { x: 50, y: 400 },
               ]}
-              speed={100}
+              speed={smallRangeSpeed}
               onComplete={() => {
                 setBusTransfers((prev) =>
                   prev.filter((x) => x.uuid !== transfer.uuid),
@@ -157,7 +163,7 @@ export function Visual() {
                 { x: 150, y: 350 },
                 { x: 300, y: 350 },
               ]}
-              speed={200}
+              speed={smallRangeSpeed}
               onComplete={() => {
                 setBusTransfers((prev) =>
                   prev.filter((x) => x.uuid !== transfer.uuid),
@@ -177,26 +183,7 @@ export function Visual() {
                 { x: 150, y: 420 },
                 { x: 150, y: 350 },
               ]}
-              speed={200}
-              onComplete={() => {
-                setBusTransfers((prev) =>
-                  prev.filter((x) => x.uuid !== transfer.uuid),
-                );
-              }}
-              data={toHex16(transfer.data)}
-            />
-          );
-        }
-        if (transfer.from == "INPR" && transfer.to == "ALU") {
-          return (
-            <DataPacket
-              key={transfer.uuid}
-              points={[
-                { x: 200, y: 480 },
-                { x: 120, y: 480 },
-                { x: 120, y: 350 },
-              ]}
-              speed={200}
+              speed={smallRangeSpeed}
               onComplete={() => {
                 setBusTransfers((prev) =>
                   prev.filter((x) => x.uuid !== transfer.uuid),
@@ -218,7 +205,7 @@ export function Visual() {
                 { x: 0, y: 550 },
                 { x: 230, y: 550 },
               ]}
-              speed={300}
+              speed={longRangeSpeed}
               onComplete={() => {
                 setBusTransfers((prev) =>
                   prev.filter((x) => x.uuid !== transfer.uuid),
@@ -240,7 +227,7 @@ export function Visual() {
                 { x: 0, y: 100 },
                 { x: 230, y: 100 },
               ]}
-              speed={300}
+              speed={longRangeSpeed}
               onComplete={() => {
                 setBusTransfers((prev) =>
                   prev.filter((x) => x.uuid !== transfer.uuid),
@@ -262,7 +249,7 @@ export function Visual() {
                 { x: 0, y: 100 },
                 { x: 230, y: 100 },
               ]}
-              speed={300}
+              speed={longRangeSpeed}
               onComplete={() => {
                 setBusTransfers((prev) =>
                   prev.filter((x) => x.uuid !== transfer.uuid),
@@ -284,7 +271,7 @@ export function Visual() {
                 { x: 0, y: 615 },
                 { x: 220, y: 615 },
               ]}
-              speed={300}
+              speed={longRangeSpeed}
               onComplete={() => {
                 setBusTransfers((prev) =>
                   prev.filter((x) => x.uuid !== transfer.uuid),
@@ -306,7 +293,7 @@ export function Visual() {
                 { x: 0, y: 20 }, // MEMORY
                 { x: 220, y: 20 }, // MEMORY
               ]}
-              speed={300}
+              speed={longRangeSpeed}
               onComplete={() => {
                 setBusTransfers((prev) =>
                   prev.filter((x) => x.uuid !== transfer.uuid),
@@ -328,7 +315,7 @@ export function Visual() {
                 { x: 0, y: 250 },
                 { x: 180, y: 250 },
               ]}
-              speed={300}
+              speed={longRangeSpeed}
               onComplete={() => {
                 setBusTransfers((prev) =>
                   prev.filter((x) => x.uuid !== transfer.uuid),
@@ -349,7 +336,7 @@ export function Visual() {
                 { x: 125, y: 300 },
                 { x: 125, y: 350 },
               ]}
-              speed={200}
+              speed={longRangeSpeed}
               onComplete={() => {
                 setBusTransfers((prev) =>
                   prev.filter((x) => x.uuid !== transfer.uuid),
@@ -371,7 +358,7 @@ export function Visual() {
                 { x: 0, y: 20 },
                 { x: 230, y: 20 },
               ]}
-              speed={300}
+              speed={longRangeSpeed}
               onComplete={() => {
                 setBusTransfers((prev) =>
                   prev.filter((x) => x.uuid !== transfer.uuid),
@@ -393,7 +380,7 @@ export function Visual() {
                 { x: 0, y: 180 },
                 { x: 225, y: 180 }, // PC
               ]}
-              speed={300}
+              speed={longRangeSpeed}
               onComplete={() => {
                 setBusTransfers((prev) =>
                   prev.filter((x) => x.uuid !== transfer.uuid),
@@ -415,7 +402,7 @@ export function Visual() {
                 { x: 0, y: 20 }, // MEMORY
                 { x: 220, y: 20 }, // MEMORY
               ]}
-              speed={300}
+              speed={longRangeSpeed}
               onComplete={() => {
                 setBusTransfers((prev) =>
                   prev.filter((x) => x.uuid !== transfer.uuid),
@@ -437,7 +424,7 @@ export function Visual() {
                 { x: 125, y: 300 },
                 { x: 125, y: 350 },
               ]}
-              speed={300}
+              speed={longRangeSpeed}
               onComplete={() => {
                 setBusTransfers((prev) =>
                   prev.filter((x) => x.uuid !== transfer.uuid),
@@ -459,7 +446,7 @@ export function Visual() {
                 { x: 125, y: 300 },
                 { x: 125, y: 350 },
               ]}
-              speed={300}
+              speed={longRangeSpeed}
               onComplete={() => {
                 setBusTransfers((prev) =>
                   prev.filter((x) => x.uuid !== transfer.uuid),

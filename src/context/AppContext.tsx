@@ -34,6 +34,8 @@ type AppContextType = {
   setBusTransfers: React.Dispatch<React.SetStateAction<BusTransfer[]>>;
   showVisualizer: boolean;
   setShowVisualizer: React.Dispatch<React.SetStateAction<boolean>>;
+  animationSpeed: number;
+  setAnimationSpeed: React.Dispatch<React.SetStateAction<number>>;
 };
 
 // Default value (will be overridden by the Provider)
@@ -48,6 +50,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   const [inputStream, setInputStream] = useState<number[]>([]);
   const [busTransfers, setBusTransfers] = useState<BusTransfer[]>([]);
   const [showVisualizer, setShowVisualizer] = useState<boolean>(false);
+  const [animationSpeed, setAnimationSpeed] = useState<number>(100);
 
   function compile() {
     try {
@@ -161,6 +164,8 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         setBusTransfers,
         showVisualizer,
         setShowVisualizer,
+        animationSpeed,
+        setAnimationSpeed,
       }}
     >
       {children}

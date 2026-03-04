@@ -19,6 +19,9 @@ function App() {
     macroStep,
     showVisualizer,
     setShowVisualizer,
+    setBusTransfers,
+    animationSpeed,
+    setAnimationSpeed,
   } = useAppContext();
 
   const visualizerRef = useRef<HTMLDivElement>(null);
@@ -140,39 +143,75 @@ function App() {
               </div>
             </div>
           </div>
-          <div className="w-[500px] h-full" ref={visualizerRef}>
-            <div className="flex items-center">
-              <input
-                checked={showVisualizer}
-                id="checked-checkbox"
-                type="checkbox"
-                className="w-4 h-4 border border-default-medium rounded-xs bg-neutral-secondary-medium focus:ring-2 focus:ring-brand-soft cursor-pointer"
-                onChange={(e) => setShowVisualizer(e.target.checked)}
-              />
+          <div className="flex flex-col h-full">
+            <div className="flex flex-row w-fit h-8 gap-2 absolute top-4 right-4 z-10 bg-primary-900 p-2 rounded-sm border-solid border-black border-2">
+              {/* checkbox row */}
+              <div className="flex items-center flex-row">
+                <input
+                  checked={showVisualizer}
+                  id="checked-checkbox"
+                  type="checkbox"
+                  className="w-4 h-4 border border-default-medium rounded-xs bg-neutral-secondary-medium focus:ring-2 focus:ring-brand-soft cursor-pointer"
+                  onChange={(e) => {
+                    setBusTransfers([]);
+                    setShowVisualizer(e.target.checked);
+                  }}
+                />
 
-              <label
-                htmlFor="checked-checkbox"
-                className="select-none ms-2 text-sm font-medium text-heading text-white font-bold"
-              >
-                Show Visualizer
-              </label>
+                <label
+                  htmlFor="checked-checkbox"
+                  className="select-none ms-2 text-sm font-medium text-white font-bold w-30"
+                >
+                  Show Visualizer
+                </label>
+              </div>
+
+              <div className="flex items-center flex-row">
+                <label
+                  htmlFor="animation-speed"
+                  className="select-none ms-2 text-sm font-medium text-white font-bold w-fit"
+                >
+                  Animation Speed
+                </label>
+
+                {/* range input */}
+                <input
+                  id="animation-speed"
+                  type="range"
+                  defaultValue={100}
+                  max={300}
+                  min={50}
+                  onChange={(e) => setAnimationSpeed(Number(e.target.value))}
+                  className="w-full h-2 bg-neutral-quaternary rounded-full appearance-none cursor-pointer bg-gray-700"
+                />
+                <span className="ms-2  text-sm font-medium text-white font-bold w-40">
+                  {`(${animationSpeed}/100) %`}
+                </span>
+              </div>
             </div>
-            {showVisualizer && (
+
+            <div
+              ref={visualizerRef}
+              className={`
+      h-full overflow-hidden transition-all duration-500 ease-out
+      ${showVisualizer ? "w-[500px] opacity-100" : "w-0 opacity-0"}
+    `}
+            >
               <div
-                className="w-full h-full bg-primary-800 border-solid border-black border-2 rounded-sm relative"
+                className="w-[500px] h-full bg-primary-800 border-solid border-black border-2 rounded-sm relative"
                 style={{
                   boxShadow: `
-      rgba(255, 255, 255, 0.25) 0px 54px 55px,
-      rgba(255, 255, 255, 0.12) 0px -12px 30px,
-      rgba(255, 255, 255, 0.12) 0px 4px 6px,
-      rgba(255, 255, 255, 0.17) 0px 12px 13px,
-      rgba(255, 255, 255, 0.09) 0px -3px 5px
-    `,
+          rgba(255, 255, 255, 0.25) 0px 54px 55px,
+          rgba(255, 255, 255, 0.12) 0px -12px 30px,
+          rgba(255, 255, 255, 0.12) 0px 4px 6px,
+          rgba(255, 255, 255, 0.17) 0px 12px 13px,
+          rgba(255, 255, 255, 0.09) 0px -3px 5px
+        `,
                 }}
               >
-                <Visual />
+                {showVisualizer && <Visual />}
               </div>
-            )}
+            </div>
           </div>
         </div>
       </div>
