@@ -32,6 +32,8 @@ type AppContextType = {
   setInputStream: React.Dispatch<React.SetStateAction<number[]>>;
   busTransfers: BusTransfer[];
   setBusTransfers: React.Dispatch<React.SetStateAction<BusTransfer[]>>;
+  showVisualizer: boolean;
+  setShowVisualizer: React.Dispatch<React.SetStateAction<boolean>>;
 };
 
 // Default value (will be overridden by the Provider)
@@ -127,16 +129,16 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     return busTransfers;
   }
 
-  useEffect(() => {
-    const t: BusTransfer = {
-      from: "PC",
-      to: "TR",
-      data: 0x1234,
-      uuid: "lajflja",
-    };
+  // useEffect(() => {
+  //   const t: BusTransfer = {
+  //     from: "PC",
+  //     to: "TR",
+  //     data: 0x1234,
+  //     uuid: "lajflja",
+  //   };
 
-    setBusTransfers((prev) => [...prev, t]);
-  }, []);
+  //   setBusTransfers((prev) => [...prev, t]);
+  // }, []);
 
   return (
     <AppContext.Provider
@@ -157,6 +159,8 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         setInputStream,
         busTransfers,
         setBusTransfers,
+        showVisualizer,
+        setShowVisualizer,
       }}
     >
       {children}

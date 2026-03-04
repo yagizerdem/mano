@@ -1,4 +1,4 @@
-import { Fragment, useEffect } from "react";
+import { Fragment, useEffect, useRef } from "react";
 import { ManoEditor } from "./components/ManoEditor";
 import { Logger } from "./components/Logger";
 import { useAppContext } from "./context/AppContext";
@@ -8,6 +8,7 @@ import { Debugger } from "./components/Debugger";
 import { OutputStream } from "./components/OutputStream";
 import { InputStream } from "./components/InputStream";
 import { Visual } from "./components/Visual";
+import gsap from "gsap";
 
 function App() {
   const {
@@ -16,7 +17,11 @@ function App() {
     resetSimulator,
     microStep,
     macroStep,
+    showVisualizer,
+    setShowVisualizer,
   } = useAppContext();
+
+  const visualizerRef = useRef<HTMLDivElement>(null);
 
   return (
     <Fragment>
@@ -135,21 +140,39 @@ function App() {
               </div>
             </div>
           </div>
-          <div className="w-[500px] h-full">
-            <div
-              className="w-full h-full bg-primary-800 border-solid border-black border-2 rounded-sm relative"
-              style={{
-                boxShadow: `
+          <div className="w-[500px] h-full" ref={visualizerRef}>
+            <div className="flex items-center">
+              <input
+                checked={showVisualizer}
+                id="checked-checkbox"
+                type="checkbox"
+                className="w-4 h-4 border border-default-medium rounded-xs bg-neutral-secondary-medium focus:ring-2 focus:ring-brand-soft cursor-pointer"
+                onChange={(e) => setShowVisualizer(e.target.checked)}
+              />
+
+              <label
+                htmlFor="checked-checkbox"
+                className="select-none ms-2 text-sm font-medium text-heading text-white font-bold"
+              >
+                Show Visualizer
+              </label>
+            </div>
+            {showVisualizer && (
+              <div
+                className="w-full h-full bg-primary-800 border-solid border-black border-2 rounded-sm relative"
+                style={{
+                  boxShadow: `
       rgba(255, 255, 255, 0.25) 0px 54px 55px,
       rgba(255, 255, 255, 0.12) 0px -12px 30px,
       rgba(255, 255, 255, 0.12) 0px 4px 6px,
       rgba(255, 255, 255, 0.17) 0px 12px 13px,
       rgba(255, 255, 255, 0.09) 0px -3px 5px
     `,
-              }}
-            >
-              <Visual />
-            </div>
+                }}
+              >
+                <Visual />
+              </div>
+            )}
           </div>
         </div>
       </div>
