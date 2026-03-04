@@ -14,7 +14,10 @@
     "@monaco-editor/react": "^4.7.0",
     "@tailwindcss/vite": "^4.1.13",
     "@types/jest": "^30.0.0",
+    "framer-motion": "^12.34.5",
+    "i": "^0.3.7",
     "monaco-editor": "^0.53.0",
+    "npm": "^11.11.0",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
     "tailwindcss": "^4.1.13"

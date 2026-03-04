@@ -1,5 +1,5 @@
 import type { Instruction, Program } from "../assembler/Assembler";
-import { MRI_OpCodes, Non_MRI_OpCodes, REG_REF_KEYWORDS } from "../SD";
+import { MRI_OpCodes, Non_MRI_OpCodes } from "../SD";
 import { Flags } from "./Flags";
 import { logger } from "./Logger";
 import { Registers } from "./Registers";
@@ -24,6 +24,26 @@ class Memory {
     this.codeMemory = new Array(MEMORY_SIZE).fill(null);
   }
 }
+
+export type BusTransfer = {
+  from: Component;
+  to: Component;
+  data: number;
+};
+
+type Component =
+  | "PC"
+  | "AR"
+  | "DR"
+  | "AC"
+  | "IR"
+  | "TR"
+  | "INPR"
+  | "OUTR"
+  | "MEMORY"
+  | "ALU"
+  | "E"
+  | "BUS";
 
 class Simulator {
   private registers: Registers;
@@ -76,8 +96,10 @@ class Simulator {
     this.inputStream = inputQueue;
   }
 
-  public microStep() {
-    if (this.flags.S === 0) return;
+  public microStep(): Array<BusTransfer> {
+    const response: Array<BusTransfer> = [];
+
+    if (this.flags.S === 0) return response;
 
     // handle output
     if (this.flags.FGO === 0 && this.registers.getSC() === 0) {
@@ -113,17 +135,22 @@ class Simulator {
 
     const currentTick = ticks.at(this.registers.getSC())!.bind(this)!;
 
-    currentTick();
+    response.push(...currentTick());
+
+    return response;
   }
 
-  public macroStep() {
-    if (this.flags.S === 0) return;
+  public macroStep(): Array<BusTransfer> {
+    const response: Array<BusTransfer> = [];
+    if (this.flags.S === 0) return response;
 
     const currentSequence = this.registers.getSC();
-    if (currentSequence === 0) this.microStep();
+    if (currentSequence === 0) response.push(...this.microStep());
     while (this.registers.getSC() !== 0) {
-      this.microStep();
+      response.push(...this.microStep());
     }
+
+    return response;
   }
 
   public run() {
@@ -132,38 +159,60 @@ class Simulator {
     }
   }
 
-  public t0() {
+  public t0(): Array<BusTransfer> {
+    const response: Array<BusTransfer> = [];
+
     // AR <- PC
     this.registers.setAddressRegister(this.registers.getProgramCounter());
     this.registers.setSC(this.registers.getSC() + 1);
 
     logger.info(
       "FETCH",
-      `AR <- PC = ${toHex12(this.registers.getAddressRegister())}`
+      `AR <- PC = ${toHex12(this.registers.getAddressRegister())}`,
     );
+
+    response.push({
+      from: "PC",
+      to: "AR",
+      data: this.registers.getProgramCounter(),
+    } as BusTransfer);
+
+    return response;
   }
 
-  public t1() {
+  public t1(): Array<BusTransfer> {
+    const response: Array<BusTransfer> = [];
+
     // IR <- M[AR], PC <- PC + 1
 
     this.registers.setInstructionRegister(
-      this.memory.machineCodeMemory[this.registers.getAddressRegister()]
+      this.memory.machineCodeMemory[this.registers.getAddressRegister()],
     );
     this.registers.setProgramCounter(this.registers.getProgramCounter() + 1);
     this.registers.setSC(this.registers.getSC() + 1);
 
     logger.info(
       "FETCH",
-      `IR <- M[AR] = ${toHex16(this.registers.getInstructionRegister())}`
+      `IR <- M[AR] = ${toHex16(this.registers.getInstructionRegister())}`,
     );
 
     logger.info(
       "FETCH",
-      `PC <- PC + 1 = ${toHex12(this.registers.getProgramCounter())}`
+      `PC <- PC + 1 = ${toHex12(this.registers.getProgramCounter())}`,
     );
+
+    response.push({
+      from: "MEMORY",
+      to: "IR",
+      data: this.registers.getInstructionRegister(),
+    } as BusTransfer);
+
+    return response;
   }
 
   public t2() {
+    const response: Array<BusTransfer> = [];
+
     // decode D0- D7 <- IR(12-14) AR <- IR(0-11) I <- IR(15)
     const instruction = this.registers.getInstructionRegister();
     const opcode = (instruction >> 12) & 0x7;
@@ -176,9 +225,18 @@ class Simulator {
     logger.info("DECODE", `I <- IR(15) = ${indirection}`);
 
     this.registers.setSC(this.registers.getSC() + 1);
+
+    response.push({
+      from: "IR",
+      to: "AR",
+      data: this.registers.getAddressRegister(),
+    } as BusTransfer);
+
+    return response;
   }
 
-  public t3() {
+  public t3(): Array<BusTransfer> {
+    const response: Array<BusTransfer> = [];
     const instruction = this.registers.getInstructionRegister();
     const opcode = (instruction >> 12) & 0x7;
     const address = instruction & 0x0fff;
@@ -189,12 +247,18 @@ class Simulator {
       if (indirection === 1) {
         // AR <- M[AR]
         this.registers.setAddressRegister(
-          this.memory.machineCodeMemory[this.registers.getAddressRegister()]
+          this.memory.machineCodeMemory[this.registers.getAddressRegister()],
         );
         logger.info(
           "EXECUTE_MRI",
-          `AR <- M[AR] = ${toHex12(this.registers.getAddressRegister())}`
+          `AR <- M[AR] = ${toHex12(this.registers.getAddressRegister())}`,
         );
+
+        response.push({
+          from: "MEMORY",
+          to: "AR",
+          data: this.registers.getAddressRegister(),
+        } as BusTransfer);
       } else {
         logger.info("EXECUTE_MRI", "No Indirection");
       }
@@ -237,7 +301,7 @@ class Simulator {
             this.flags.E = lsb;
             logger.info(
               "EXECUTE_NMRI",
-              `CIR: AC <- ${toHex16(newAc)}, E <- ${lsb}`
+              `CIR: AC <- ${toHex16(newAc)}, E <- ${lsb}`,
             );
 
             break;
@@ -252,7 +316,7 @@ class Simulator {
 
             logger.info(
               "EXECUTE_NMRI",
-              `CIL: AC <- ${toHex16(newAc)}, E <- ${msb}`
+              `CIL: AC <- ${toHex16(newAc)}, E <- ${msb}`,
             );
             break;
           }
@@ -261,7 +325,7 @@ class Simulator {
             this.registers.setAccumulator(this.registers.getAccumulator() + 1);
             logger.info(
               "EXECUTE_NMRI",
-              `INC: AC <- AC + 1 = ${toHex16(this.registers.getAccumulator())}`
+              `INC: AC <- AC + 1 = ${toHex16(this.registers.getAccumulator())}`,
             );
             break;
           }
@@ -270,13 +334,13 @@ class Simulator {
             const sign = (this.registers.getAccumulator() >> 15) & 0x1;
             if (sign === 0) {
               this.registers.setProgramCounter(
-                this.registers.getProgramCounter() + 1
+                this.registers.getProgramCounter() + 1,
               );
               logger.info(
                 "EXECUTE_NMRI",
                 `SPA: AC(15) = 0, so PC <- PC + 1 = ${toHex12(
-                  this.registers.getProgramCounter()
-                )}`
+                  this.registers.getProgramCounter(),
+                )}`,
               );
             } else {
               logger.info("EXECUTE_NMRI", `SPA: AC(15) = 1, no action`);
@@ -288,13 +352,13 @@ class Simulator {
             const sign = (this.registers.getAccumulator() >> 15) & 0x1;
             if (sign === 1) {
               this.registers.setProgramCounter(
-                this.registers.getProgramCounter() + 1
+                this.registers.getProgramCounter() + 1,
               );
               logger.info(
                 "EXECUTE_NMRI",
                 `SNA: AC(15) = 1, so PC <- PC + 1 = ${toHex12(
-                  this.registers.getProgramCounter()
-                )}`
+                  this.registers.getProgramCounter(),
+                )}`,
               );
             } else {
               logger.info("EXECUTE_NMRI", `SNA: AC(15) = 0, no action`);
@@ -305,13 +369,13 @@ class Simulator {
           case Non_MRI_OpCodes.SZA: {
             if (this.registers.getAccumulator() === 0) {
               this.registers.setProgramCounter(
-                this.registers.getProgramCounter() + 1
+                this.registers.getProgramCounter() + 1,
               );
               logger.info(
                 "EXECUTE_NMRI",
                 `SZA: AC = 0, so PC <- PC + 1 = ${toHex12(
-                  this.registers.getProgramCounter()
-                )}`
+                  this.registers.getProgramCounter(),
+                )}`,
               );
             } else {
               logger.info("EXECUTE_NMRI", `SZA: AC != 0, no action`);
@@ -322,13 +386,13 @@ class Simulator {
           case Non_MRI_OpCodes.SZE: {
             if (this.flags.E === 0) {
               this.registers.setProgramCounter(
-                this.registers.getProgramCounter() + 1
+                this.registers.getProgramCounter() + 1,
               );
               logger.info(
                 "EXECUTE_NMRI",
                 `SZE: E = 0, so PC <- PC + 1 = ${toHex12(
-                  this.registers.getProgramCounter()
-                )}`
+                  this.registers.getProgramCounter(),
+                )}`,
               );
             } else {
               logger.info("EXECUTE_NMRI", `SZE: E != 0, no action`);
@@ -352,24 +416,36 @@ class Simulator {
             logger.info(
               "EXECUTE_NMRI",
               `INP: AC(0–7) <- INPR = ${toHex8(lowByte)}, AC = ${toHex16(
-                this.registers.getAccumulator()
-              )}, FGI <- 0`
+                this.registers.getAccumulator(),
+              )}, FGI <- 0`,
             );
+
+            response.push({
+              from: "INPR",
+              to: "AC",
+              data: this.registers.getInputRegister(),
+            } as BusTransfer);
 
             break;
           }
 
           case Non_MRI_OpCodes.OUT: {
             this.registers.setOutputRegister(
-              this.registers.getAccumulator() & 0x00ff
+              this.registers.getAccumulator() & 0x00ff,
             );
             this.flags.FGO = 0;
             logger.info(
               "EXECUTE_NMRI",
               `OUT: OUTR <- AC(0–7) = ${toHex8(
-                this.registers.getOutputRegister()
-              )}, FGO <- 0`
+                this.registers.getOutputRegister(),
+              )}, FGO <- 0`,
             );
+
+            response.push({
+              from: "AC",
+              to: "OUTR",
+              data: this.registers.getOutputRegister(),
+            } as BusTransfer);
 
             break;
           }
@@ -377,13 +453,13 @@ class Simulator {
           case Non_MRI_OpCodes.SKI: {
             if (this.flags.FGI === 1) {
               this.registers.setProgramCounter(
-                this.registers.getProgramCounter() + 1
+                this.registers.getProgramCounter() + 1,
               );
               logger.info(
                 "EXECUTE_NMRI",
                 `SKI: FGI = 1, so PC <- PC + 1 = ${toHex12(
-                  this.registers.getProgramCounter()
-                )}`
+                  this.registers.getProgramCounter(),
+                )}`,
               );
             } else {
               logger.info("EXECUTE_NMRI", `SKI: FGI = 0, no action`);
@@ -395,13 +471,13 @@ class Simulator {
           case Non_MRI_OpCodes.SKO: {
             if (this.flags.FGO === 1) {
               this.registers.setProgramCounter(
-                this.registers.getProgramCounter() + 1
+                this.registers.getProgramCounter() + 1,
               );
               logger.info(
                 "EXECUTE_NMRI",
                 `SKO: FGO = 1, so PC <- PC + 1 = ${toHex12(
-                  this.registers.getProgramCounter()
-                )}`
+                  this.registers.getProgramCounter(),
+                )}`,
               );
             } else {
               logger.info("EXECUTE_NMRI", `SKO: FGO = 0, no action`);
@@ -426,9 +502,12 @@ class Simulator {
         this.registers.setSC(0);
       }
     }
+
+    return response;
   }
 
-  public t4() {
+  public t4(): Array<BusTransfer> {
+    const response: Array<BusTransfer> = [];
     const instruction = this.registers.getInstructionRegister();
     const opcode = (instruction >> 12) & 0x7;
     const address = instruction & 0x0fff;
@@ -440,12 +519,17 @@ class Simulator {
       case MRI_OpCodes.ADD:
       case MRI_OpCodes.LDA: {
         this.registers.setDataRegister(
-          this.memory.machineCodeMemory[this.registers.getAddressRegister()]
+          this.memory.machineCodeMemory[this.registers.getAddressRegister()],
         );
         logger.info(
           "EXECUTE_MRI",
-          `DR <- M[AR] = ${toHex16(this.registers.getDataRegister())}`
+          `DR <- M[AR] = ${toHex16(this.registers.getDataRegister())}`,
         );
+        response.push({
+          from: "MEMORY",
+          to: "DR",
+          data: this.registers.getDataRegister(),
+        } as BusTransfer);
         break;
       }
       case MRI_OpCodes.STA: {
@@ -457,10 +541,17 @@ class Simulator {
         logger.info(
           "EXECUTE_MRI",
           `STA: M[AR] <- AC = ${toHex16(
-            this.registers.getAccumulator()
-          )}, SC <- 0`
+            this.registers.getAccumulator(),
+          )}, SC <- 0`,
         );
-        return;
+
+        response.push({
+          from: "AC",
+          to: "MEMORY",
+          data: this.registers.getAccumulator(),
+        } as BusTransfer);
+
+        return response;
       }
       case MRI_OpCodes.BUN: {
         this.registers.setProgramCounter(this.registers.getAddressRegister());
@@ -468,17 +559,24 @@ class Simulator {
         logger.info(
           "EXECUTE_MRI",
           `BUN: PC <- AR = ${toHex12(
-            this.registers.getProgramCounter()
-          )}, SC <- 0`
+            this.registers.getProgramCounter(),
+          )}, SC <- 0`,
         );
-        return;
+
+        response.push({
+          from: "AR",
+          to: "PC",
+          data: this.registers.getProgramCounter(),
+        } as BusTransfer);
+
+        return response;
       }
       case MRI_OpCodes.BSA: {
         this.memory.machineCodeMemory[this.registers.getAddressRegister()] =
           this.registers.getProgramCounter();
 
         this.registers.setAddressRegister(
-          this.registers.getAddressRegister() + 1
+          this.registers.getAddressRegister() + 1,
         );
 
         break;
@@ -486,22 +584,31 @@ class Simulator {
 
       case MRI_OpCodes.ISZ: {
         this.registers.setDataRegister(
-          this.memory.machineCodeMemory[this.registers.getAddressRegister()]
+          this.memory.machineCodeMemory[this.registers.getAddressRegister()],
         );
 
         logger.info(
           "EXECUTE_MRI",
-          `DR <- M[AR] = ${toHex16(this.registers.getDataRegister())}`
+          `DR <- M[AR] = ${toHex16(this.registers.getDataRegister())}`,
         );
+
+        response.push({
+          from: "MEMORY",
+          to: "DR",
+          data: this.registers.getDataRegister(),
+        } as BusTransfer);
 
         break;
       }
     }
 
     this.registers.setSC(this.registers.getSC() + 1);
+
+    return response;
   }
 
-  public t5() {
+  public t5(): Array<BusTransfer> {
+    const response: Array<BusTransfer> = [];
     const instruction = this.registers.getInstructionRegister();
     const opcode = (instruction >> 12) & 0x7;
     const address = instruction & 0x0fff;
@@ -511,37 +618,55 @@ class Simulator {
     switch (opcode) {
       case MRI_OpCodes.AND: {
         this.registers.setAccumulator(
-          this.registers.getAccumulator() & this.registers.getDataRegister()
+          this.registers.getAccumulator() & this.registers.getDataRegister(),
         );
         logger.info(
           "EXECUTE_MRI",
-          `AND: AC <- AC & DR = ${toHex16(this.registers.getAccumulator())}`
+          `AND: AC <- AC & DR = ${toHex16(this.registers.getAccumulator())}`,
         );
         this.registers.setSC(0);
 
-        return;
+        return response;
       }
 
       case MRI_OpCodes.ADD: {
+        response.push({
+          from: "DR",
+          to: "ALU",
+          data: this.registers.getDataRegister(),
+        } as BusTransfer);
+
+        response.push({
+          from: "AC",
+          to: "ALU",
+          data: this.registers.getAccumulator(),
+        } as BusTransfer);
+
         const Cout =
           ((this.registers.getAccumulator() +
             this.registers.getDataRegister()) >>
             16) &
           0x1;
         this.registers.setAccumulator(
-          this.registers.getAccumulator() + this.registers.getDataRegister()
+          this.registers.getAccumulator() + this.registers.getDataRegister(),
         );
 
         this.flags.E = Cout;
         logger.info(
           "EXECUTE_MRI",
           `ADD: AC <- AC + DR = ${toHex16(
-            this.registers.getAccumulator()
-          )}, E <- ${Cout}`
+            this.registers.getAccumulator(),
+          )}, E <- ${Cout}`,
         );
         this.registers.setSC(0);
 
-        return;
+        response.push({
+          from: "ALU",
+          to: "AC",
+          data: this.registers.getAccumulator(),
+        } as BusTransfer);
+
+        return response;
       }
 
       case MRI_OpCodes.LDA: {
@@ -549,9 +674,16 @@ class Simulator {
         this.registers.setSC(0);
         logger.info(
           "EXECUTE_MRI",
-          `LDA: AC <- DR = ${toHex16(this.registers.getAccumulator())}`
+          `LDA: AC <- DR = ${toHex16(this.registers.getAccumulator())}`,
         );
-        return;
+
+        response.push({
+          from: "DR",
+          to: "AC",
+          data: this.registers.getDataRegister(),
+        } as BusTransfer);
+
+        return response;
       }
 
       case MRI_OpCodes.BSA: {
@@ -560,10 +692,17 @@ class Simulator {
         logger.info(
           "EXECUTE_MRI",
           `BSA: PC <- AR = ${toHex12(
-            this.registers.getProgramCounter()
-          )}, SC <- 0`
+            this.registers.getProgramCounter(),
+          )}, SC <- 0`,
         );
-        return;
+
+        response.push({
+          from: "AR",
+          to: "PC",
+          data: this.registers.getProgramCounter(),
+        } as BusTransfer);
+
+        return response;
       }
 
       case MRI_OpCodes.ISZ: {
@@ -573,7 +712,7 @@ class Simulator {
 
         logger.info(
           "EXECUTE_MRI",
-          `ISZ: DR <- DR + 1 = ${toHex16(this.registers.getDataRegister())}`
+          `ISZ: DR <- DR + 1 = ${toHex16(this.registers.getDataRegister())}`,
         );
 
         break;
@@ -581,7 +720,8 @@ class Simulator {
     }
   }
 
-  public t6() {
+  public t6(): Array<BusTransfer> {
+    const response: Array<BusTransfer> = [];
     // only ISZ reaches here
 
     this.memory.machineCodeMemory[this.registers.getAddressRegister()] =
@@ -589,21 +729,29 @@ class Simulator {
 
     logger.info(
       "EXECUTE_MRI",
-      `M[AR] <- DR = ${toHex16(this.registers.getDataRegister())}`
+      `M[AR] <- DR = ${toHex16(this.registers.getDataRegister())}`,
     );
+
+    response.push({
+      from: "DR",
+      to: "MEMORY",
+      data: this.registers.getDataRegister(),
+    } as BusTransfer);
 
     if (this.registers.getDataRegister() === 0) {
       this.registers.setProgramCounter(this.registers.getProgramCounter() + 1);
       logger.info(
         "EXECUTE_MRI",
         `ISZ: DR = 0, so PC <- PC + 1 = ${toHex12(
-          this.registers.getProgramCounter()
-        )}`
+          this.registers.getProgramCounter(),
+        )}`,
       );
     } else {
       logger.info("EXECUTE_MRI", `ISZ: DR != 0, no action`);
     }
     this.registers.setSC(0);
+
+    return response;
   }
 
   public getSnapShot(): SnapShot {

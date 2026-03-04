@@ -5,7 +5,7 @@ import React, {
   useState,
   type ReactNode,
 } from "react";
-import { Simulator } from "../simulator/Simulator";
+import { Simulator, type BusTransfer } from "../simulator/Simulator";
 import { Assembler, Program } from "../assembler/Assembler";
 import { LexerException } from "../assembler/LexerException";
 import { logger } from "../simulator/Logger";
@@ -41,6 +41,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   const [programCompiled, setProgramCompiled] = useState<Program | null>(null);
   const [snapShot, setSnapShot] = useState<SnapShot>(new SnapShot());
   const [inputStream, setInputStream] = useState<number[]>([]);
+  const [busTransfers, setBusTransfers] = useState<BusTransfer[]>([]);
 
   function compile() {
     try {
@@ -92,28 +93,34 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     setInputStream([]);
   }
 
-  function microStep() {
+  function microStep(): Array<BusTransfer> {
     if (!simulatorRef.current.isLoaded) {
       logger.error("SYSTEM", "No program loaded into simulator.");
-      return;
+      return [];
     }
 
-    simulatorRef.current.microStep();
+    const busTransfers: Array<BusTransfer> = simulatorRef.current.microStep();
     // get snapshot
     const snapShot: SnapShot = simulatorRef.current.getSnapShot();
     setSnapShot(snapShot);
+    setBusTransfers((prev) => [...prev, ...busTransfers]);
+
+    return busTransfers;
   }
 
-  function macroStep() {
+  function macroStep(): Array<BusTransfer> {
     if (!simulatorRef.current.isLoaded) {
       logger.error("SYSTEM", "No program loaded into simulator.");
-      return;
+      return [];
     }
 
-    simulatorRef.current.macroStep();
+    const busTransfers: Array<BusTransfer> = simulatorRef.current.macroStep();
     // get snapshot
     const snapShot: SnapShot = simulatorRef.current.getSnapShot();
     setSnapShot(snapShot);
+    setBusTransfers((prev) => [...prev, ...busTransfers]);
+
+    return busTransfers;
   }
 
   return (
