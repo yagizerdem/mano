@@ -4,6 +4,7 @@ import { Flags } from "./Flags";
 import { logger } from "./Logger";
 import { Registers } from "./Registers";
 import { SnapShot } from "./SnapShot";
+import { v4 as uuidv4, v4 } from "uuid";
 
 const toHex16 = (num: number): string =>
   num.toString(16).toUpperCase().padStart(4, "0");
@@ -29,6 +30,7 @@ export type BusTransfer = {
   from: Component;
   to: Component;
   data: number;
+  uuid: string;
 };
 
 type Component =
@@ -175,6 +177,7 @@ class Simulator {
       from: "PC",
       to: "AR",
       data: this.registers.getProgramCounter(),
+      uuid: v4(),
     } as BusTransfer);
 
     return response;
@@ -205,6 +208,7 @@ class Simulator {
       from: "MEMORY",
       to: "IR",
       data: this.registers.getInstructionRegister(),
+      uuid: v4(),
     } as BusTransfer);
 
     return response;
@@ -230,6 +234,7 @@ class Simulator {
       from: "IR",
       to: "AR",
       data: this.registers.getAddressRegister(),
+      uuid: v4(),
     } as BusTransfer);
 
     return response;
@@ -258,6 +263,7 @@ class Simulator {
           from: "MEMORY",
           to: "AR",
           data: this.registers.getAddressRegister(),
+          uuid: v4(),
         } as BusTransfer);
       } else {
         logger.info("EXECUTE_MRI", "No Indirection");
@@ -424,6 +430,7 @@ class Simulator {
               from: "INPR",
               to: "AC",
               data: this.registers.getInputRegister(),
+              uuid: v4(),
             } as BusTransfer);
 
             break;
@@ -445,6 +452,7 @@ class Simulator {
               from: "AC",
               to: "OUTR",
               data: this.registers.getOutputRegister(),
+              uuid: v4(),
             } as BusTransfer);
 
             break;
@@ -529,6 +537,7 @@ class Simulator {
           from: "MEMORY",
           to: "DR",
           data: this.registers.getDataRegister(),
+          uuid: v4(),
         } as BusTransfer);
         break;
       }
@@ -549,6 +558,7 @@ class Simulator {
           from: "AC",
           to: "MEMORY",
           data: this.registers.getAccumulator(),
+          uuid: v4(),
         } as BusTransfer);
 
         return response;
@@ -567,6 +577,7 @@ class Simulator {
           from: "AR",
           to: "PC",
           data: this.registers.getProgramCounter(),
+          uuid: v4(),
         } as BusTransfer);
 
         return response;
@@ -596,6 +607,7 @@ class Simulator {
           from: "MEMORY",
           to: "DR",
           data: this.registers.getDataRegister(),
+          uuid: v4(),
         } as BusTransfer);
 
         break;
@@ -634,12 +646,14 @@ class Simulator {
           from: "DR",
           to: "ALU",
           data: this.registers.getDataRegister(),
+          uuid: v4(),
         } as BusTransfer);
 
         response.push({
           from: "AC",
           to: "ALU",
           data: this.registers.getAccumulator(),
+          uuid: v4(),
         } as BusTransfer);
 
         const Cout =
@@ -664,6 +678,7 @@ class Simulator {
           from: "ALU",
           to: "AC",
           data: this.registers.getAccumulator(),
+          uuid: v4(),
         } as BusTransfer);
 
         return response;
@@ -681,6 +696,7 @@ class Simulator {
           from: "DR",
           to: "AC",
           data: this.registers.getDataRegister(),
+          uuid: v4(),
         } as BusTransfer);
 
         return response;
@@ -700,6 +716,7 @@ class Simulator {
           from: "AR",
           to: "PC",
           data: this.registers.getProgramCounter(),
+          uuid: v4(),
         } as BusTransfer);
 
         return response;
@@ -736,6 +753,7 @@ class Simulator {
       from: "DR",
       to: "MEMORY",
       data: this.registers.getDataRegister(),
+      uuid: v4(),
     } as BusTransfer);
 
     if (this.registers.getDataRegister() === 0) {

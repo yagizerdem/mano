@@ -20,7 +20,7 @@ function App() {
 
   return (
     <Fragment>
-      <div className="w-screen h-screen bg-primary-900 flex flex-row items-center justify-center">
+      <div className="w-screen h-screen bg-primary-900 flex flex-row items-center justify-center overflow-auto">
         <div className="flex flex-row w-screen h-[800px] p-4">
           <div className="flex flex-col  mx-auto  gap-3">
             <div className="w-full h-[600px] flex flex-row gap-3 justify-center">
@@ -135,19 +135,21 @@ function App() {
               </div>
             </div>
           </div>
-          <div
-            className="w-[500px] h-full bg-primary-800 border-solid border-black border-2 rounded-sm relative"
-            style={{
-              boxShadow: `
+          <div className="w-[500px] h-full">
+            <div
+              className="w-full h-full bg-primary-800 border-solid border-black border-2 rounded-sm relative"
+              style={{
+                boxShadow: `
       rgba(255, 255, 255, 0.25) 0px 54px 55px,
       rgba(255, 255, 255, 0.12) 0px -12px 30px,
       rgba(255, 255, 255, 0.12) 0px 4px 6px,
       rgba(255, 255, 255, 0.17) 0px 12px 13px,
       rgba(255, 255, 255, 0.09) 0px -3px 5px
     `,
-            }}
-          >
-            <Visual />
+              }}
+            >
+              <Visual />
+            </div>
           </div>
         </div>
       </div>

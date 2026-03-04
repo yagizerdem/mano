@@ -1,6 +1,7 @@
 import React, {
   createContext,
   useContext,
+  useEffect,
   useRef,
   useState,
   type ReactNode,
@@ -29,6 +30,8 @@ type AppContextType = {
   setSnapShot?: (s: SnapShot) => void;
   inputStream: number[];
   setInputStream: React.Dispatch<React.SetStateAction<number[]>>;
+  busTransfers: BusTransfer[];
+  setBusTransfers: React.Dispatch<React.SetStateAction<BusTransfer[]>>;
 };
 
 // Default value (will be overridden by the Provider)
@@ -42,6 +45,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   const [snapShot, setSnapShot] = useState<SnapShot>(new SnapShot());
   const [inputStream, setInputStream] = useState<number[]>([]);
   const [busTransfers, setBusTransfers] = useState<BusTransfer[]>([]);
+  const [showVisualizer, setShowVisualizer] = useState<boolean>(false);
 
   function compile() {
     try {
@@ -123,6 +127,17 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     return busTransfers;
   }
 
+  useEffect(() => {
+    const t: BusTransfer = {
+      from: "PC",
+      to: "TR",
+      data: 0x1234,
+      uuid: "lajflja",
+    };
+
+    setBusTransfers((prev) => [...prev, t]);
+  }, []);
+
   return (
     <AppContext.Provider
       value={{
@@ -140,6 +155,8 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         setSnapShot,
         inputStream,
         setInputStream,
+        busTransfers,
+        setBusTransfers,
       }}
     >
       {children}
