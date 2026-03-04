@@ -735,6 +735,8 @@ class Simulator {
         break;
       }
     }
+
+    return response;
   }
 
   public t6(): Array<BusTransfer> {
